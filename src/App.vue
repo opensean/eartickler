@@ -32,7 +32,9 @@
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-toolbar-title>ear-tickler</v-toolbar-title>
     </v-app-bar>
-
+    <v-main>
+      <component v-bind:is="currentComponent"></component>
+    </v-main>
     <v-main>
       <v-container
         class="fill-height"
@@ -69,14 +71,30 @@
 </template>
 
 <script>
+  import AudioVisualizer from './components/AudioVisualizer';
+  import P2P from './components/P2P';
   export default {
+    name: "App",
+    components: {
+        AudioVisualizer,
+        P2P,
+    },
+    
     props: {
       source: String,
     },
 
     data: () => ({
       drawer: null,
+      currentComponent: P2P,
     }),
+ 
+    methods: {
+
+      selectComponent(source){
+        this.$emit('selectsource',source)
+      }
+    },
 
     created () {
       this.$vuetify.theme.dark = true
