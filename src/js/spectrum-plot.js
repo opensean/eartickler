@@ -17,7 +17,7 @@ export function main(p) {
       canvas.mousePressed(p.userStartAudio);
       mic = new p5.AudioIn();
       mic.start();
-      //mic.connect(); //need headphone or get ready for feedback
+      mic.connect(); //need headphone or get ready for feedback
       fft = new p5.FFT();
       fft.setInput(mic);
       fadeHeight = 0;
@@ -53,6 +53,15 @@ export function main(p) {
         }
         p.endShape();
       }
+      //else if (volume > 0) {
+      //  p.noFill();
+      //  fadeHeight = fadeHeight + fadeIncrement;
+      //  p.beginShape();
+      //  for (let i = 0; i < spectrum.length; i++) {
+      //    p.vertex(i, p.map(spectrum[i], 255, 0, p.height, fadeHeight));
+      //  }
+      //  p.endShape();     
+      //}
       else {
         p.text("Click here to start audio", 0, maxFadeHeight);
         p.line(0,255,p.width,255);

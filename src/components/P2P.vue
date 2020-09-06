@@ -1,7 +1,11 @@
 <template>
   <v-container>
     <v-row class="text-center">
-      <v-col cols="12" id = "makecall">
+      <v-col cols="12" id = "connect-to-peer">
+        <v-text-field 
+          label="Enter a peer id"
+          clearable
+          :append-outer-icon='mdi-microphone'></v-text-field>
       </v-col>
     </v-row>
   </v-container>
@@ -14,11 +18,12 @@
     name: 'P2P',
 
     data: () => ({
+       myPeerId: null
     }),
     
     mounted() {
-      const peer = new Peer();
-      console.log(peer);
+      this.myPeerId = new Peer();
+      console.log(this.myPeerId);
 
     }
   }
