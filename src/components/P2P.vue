@@ -1,11 +1,11 @@
 <template>
   <v-container>
     <v-row class="text-center">
-      <v-col cols="12" id = "connect-to-peer">
+      <v-col cols="6" id = "connect-to-peer">
         <v-text-field 
           label="Enter a peer id"
           clearable
-          :append-outer-icon='mdi-microphone'></v-text-field>
+          :append-outer-icon="makeConnectionIcon"></v-text-field>
       </v-col>
     </v-row>
   </v-container>
@@ -13,12 +13,13 @@
 
 <script>
   import Peer from 'peerjs';
-
+  import { mdiHumanGreetingProximity } from '@mdi/js';
   export default {
     name: 'P2P',
 
     data: () => ({
-       myPeerId: null
+       myPeerId: null,
+       makeConnectionIcon: mdiHumanGreetingProximity,
     }),
     
     mounted() {
