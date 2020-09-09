@@ -1,7 +1,8 @@
 <template>
   <v-container>
     <v-row justify="center">
-      <video ref="video" id="video" autoplay></video>
+      <answer-media-call v-if="incoming" :call="call" :answerPrompt="answerPrompt"/> 
+      <make-media-call v-if="outgoing" :peer="peer" :remotePeerId="remotePeerId"/> 
     </v-row>
     <v-row justify="center">
       <v-col cols="6" id = "connect-to-peer">
@@ -9,7 +10,7 @@
           label="Enter a peer id"
           clearable
           :messages="messages"
-          v-model="peerId">
+          v-model="remotePeerId">
           <template v-slot:append-outer>
                   <v-btn
                    outlined
@@ -20,14 +21,6 @@
                   </v-btn>
           </template>
         </v-text-field>
-      </v-col>
-      <v-col cols="12">
-      <v-progress-linear
-        :active="loading"
-        :indeterminate="loading"
-        absolute
-        top
-      ></v-progress-linear>
       </v-col>
     </v-row>
     <v-row justify="center" class="text-center">
@@ -41,50 +34,34 @@
 <script>
   import Peer from 'peerjs';
   import { mdiHumanGreetingProximity } from '@mdi/js';
+  import AnswerMediaCall from "@/components/AnswerMediaCall.vue";
+  import MakeMediaCall from "@/components/MakeMediaCall.vue";
+
   export default {
     name: 'P2P',
-
+    components: {
+      AnswerMediaCall,
+      MakeMediaCall
+    },
     data: () => ({
        loading: false,
        peer: null,
-       peerId: null,
+       call: null,
+       answerPrompt: true,
+       remotePeerId: null,
+       incoming: false,
+       outgoing: false,
        messages: null,
        bannerMessage: null,
        makeConnectionIcon: mdiHumanGreetingProximity,
     }),
 
     methods: {
+
       connectToPeer: function() {
-        this.loading = true;
-        this.messages = "connecting to ".concat(this.peerId);
-  
-        let conn = this.peer.connect(this.peerId);
-        
-        conn.on('data', (data) => {
-          this.messages = 'received: '.concat(JSON.stringify(data));
-        });
-
-        conn.on('open', () => {
-          this.loading = false;
-          conn.send('hi!');
-        });
-  
-        navigator.mediaDevices.getUserMedia({video: true, audio: true})
-        .then((stream) => {
-          let call = this.peer.call(this.peerId, stream);
-          call.on('stream', this.renderVideo);
-          this.messages = "connected to ".concat(JSON.stringify(call.peer));
-        })
-        .catch((err) => {
-          this.messages = 'Failed to get local stream'.concat(JSON.stringify(err));
-        });
+        this.outgoing = true;
+        this.messages = "connecting to ".concat(this.remotePeerId);
       },
-      
-      renderVideo: function(stream) {
-        this.video = this.$refs.video;
-        this.video.srcObject = stream;
-      }
-
     },
     
     mounted() {
@@ -109,6 +86,7 @@
       // Handle incoming data connection
       this.peer.on('connection', (conn) => {
         this.messages = 'incoming peer connection!';
+
         conn.on('data', (data) => {
           this.messages = 'received: '.concat(JSON.stringify(data));
         });
@@ -120,19 +98,10 @@
 
       // Handle incoming voice/video connection
       this.peer.on('call', (call) => {
-        navigator.mediaDevices.getUserMedia({video: true, audio: true})
-        .then((stream) => {
-          call.answer(stream); // Answer the call with an A/V stream.
-          call.on('stream', this.renderVideo);
-          this.messages = "connected to ".concat(JSON.stringify(call.peer));
-        })
-        .catch((err) => {
-          console.error('Failed to get local stream', err);
-        });
-      });
-
-
-
+        this.loading = true;
+        this.incoming = true;
+        this.call = call;
+      })
     }
   }
     
