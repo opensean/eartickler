@@ -11,7 +11,7 @@
   <v-row justify="center">  
   <v-card
     class="mx-auto"
-    v-if="answerPrompt"
+    v-if="showAnswerPrompt"
   >
     <v-card-text>
       <div>Incoming connection from {{ call.peer }}</div>
@@ -38,25 +38,33 @@
    },
    
    data: () => ({
-     loading: true
+     loading: true,
+     showAnswerPrompt: false
    }),
+   
+   mounted (){
+     if (this.answerPrompt){
+       this.showAnswerPrompt = true;
+     }
+
+  },
   
    methods: {
 
       answerMediaCall: function () {
-        this.answerPrompt = false;
+        this.showAnswerPrompt = false;
         navigator.mediaDevices.getUserMedia({video: true, audio: true})
         .then((stream) => {
           this.call.answer(stream); // Answer the call with an A/V stream.
           this.call.on('stream', this.renderVideo);
           this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
-          this.loading = false;
+          //this.loading = false;
         })
         .catch((err) => {
           console.error('Failed to get local stream', err);
          
         })
-        .finally(function () {
+        .finally(() => {
           this.loading = false;
         });
       },

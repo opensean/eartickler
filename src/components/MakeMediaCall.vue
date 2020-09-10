@@ -29,6 +29,10 @@
      peer: {
        type: Object,
      },
+     mediaArgs: {
+       type: Object,
+     },
+
 
      remotePeerId: {
      }
@@ -37,6 +41,7 @@
    data: () => ({
      loading: true,
    }),
+
   
    mounted () {
         let conn = this.peer.connect(this.remotePeerId);
@@ -46,11 +51,10 @@
         });
 
         conn.on('open', () => {
-          this.loading = false;
           conn.send('hi!');
         });  
  
-        navigator.mediaDevices.getUserMedia({video: true, audio: true})
+        navigator.mediaDevices.getUserMedia(this.mediaArgs)
         .then((stream) => {
           let call = this.peer.call(this.remotePeerId, stream);
           call.on('stream', this.renderVideo);
@@ -59,7 +63,7 @@
         .catch((err) => {
           this.messages = 'Failed to get local stream'.concat(JSON.stringify(err));
         })
-        .finally( function() {
+        .finally(() => {
           this.loading = false;
         });
    },

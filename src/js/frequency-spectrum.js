@@ -14,9 +14,13 @@ export function main(p) {
       p.fill(255,255,255);
       p.textSize(p.windowWidth / 40);
       p.textAlign(p.LEFT, p.CENTER);
-      canvas.mousePressed(p.userStartAudio);
+      //canvas.mousePressed(p.userStartAudio);
       mic = new p5.AudioIn();
       mic.start();
+      
+      if (p.getAudioContext().state !== 'running') {
+        p.getAudioContext().resume();
+      }
       //mic.connect(); //need headphone or get ready for feedback
       fft = new p5.FFT();
       fft.setInput(mic);
@@ -54,7 +58,7 @@ export function main(p) {
         p.endShape();
       }
       else {
-        p.text("Click here to start audio", 0, maxFadeHeight);
+	//p.text("Click here to start audio", 0, maxFadeHeight);
         p.line(0,255,p.width,255);
         p.stroke(255,255,255);
       }

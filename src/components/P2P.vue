@@ -1,10 +1,12 @@
 <template>
-  <v-container>
-    <v-row justify="center">
+  <v-container t fluid>
+    <v-row justify="center" align="center">
       <answer-media-call v-if="incoming" :call="call" :answerPrompt="answerPrompt"/> 
-      <make-media-call v-if="outgoing" :peer="peer" :remotePeerId="remotePeerId"/> 
+      <make-media-call v-if="outgoing" :peer="peer" :mediaArgs="mediaArgs" :remotePeerId="remotePeerId"/> 
+      <video v-if="this.toggleMedia.includes(1)" ref="video" id="video" autoplay></video>
+      <audio-visualizer v-if="this.toggleMedia.includes(0)" />
     </v-row>
-    <v-row justify="center">
+    <v-row justify="center" align="center">
       <v-col cols="6" id = "connect-to-peer">
         <v-text-field 
           label="Enter a peer id"
@@ -14,14 +16,35 @@
           <template v-slot:append-outer>
                   <v-btn
                    outlined
-                   rounded
-                   @click="connectToPeer"
+                   fab
+                   @click="makeCall"
                   >
-                    <v-icon center>{{ makeConnectionIcon }}</v-icon>
+                    <v-icon center>{{ makeCallIcon }}</v-icon>
                   </v-btn>
           </template>
+
         </v-text-field>
       </v-col>
+    </v-row>
+    <v-row justify="center">
+            <v-btn-toggle
+              v-model="toggleMedia"
+              multiple
+            >
+                  <v-btn
+                   outlined
+                   @click="getUserAudio"
+                  >
+                    <v-icon center>{{ enableAudioIcon }}</v-icon>
+                  </v-btn>
+                  <v-btn
+                   outlined
+                   @click="getUserVideo"
+                   
+                  >
+                    <v-icon center>{{ enableVideoIcon }}</v-icon>
+                  </v-btn>
+             </v-btn-toggle>
     </v-row>
     <v-row justify="center" class="text-center">
       <v-col col="6">
@@ -34,34 +57,82 @@
 <script>
   import Peer from 'peerjs';
   import { mdiHumanGreetingProximity } from '@mdi/js';
+  import { mdiMicrophoneOutline } from '@mdi/js';
+  import { mdiVideoOutline } from '@mdi/js';
   import AnswerMediaCall from "@/components/AnswerMediaCall.vue";
   import MakeMediaCall from "@/components/MakeMediaCall.vue";
+  import AudioVisualizer from "@/components/AudioVisualizer.vue";
 
   export default {
     name: 'P2P',
     components: {
       AnswerMediaCall,
-      MakeMediaCall
+      MakeMediaCall,
+      AudioVisualizer
     },
     data: () => ({
        loading: false,
        peer: null,
        call: null,
        answerPrompt: true,
+       audioStream: null,
+       videoStream: null,
        remotePeerId: null,
        incoming: false,
        outgoing: false,
+       toggleMedia: [],
        messages: null,
        bannerMessage: null,
-       makeConnectionIcon: mdiHumanGreetingProximity,
+       makeCallIcon: mdiHumanGreetingProximity,
+       enableAudioIcon: mdiMicrophoneOutline,
+       enableVideoIcon: mdiVideoOutline,
     }),
 
     methods: {
 
-      connectToPeer: function() {
+      makeCall: function() {
         this.outgoing = true;
         this.messages = "connecting to ".concat(this.remotePeerId);
       },
+
+      getUserAudio: function() {
+        navigator.mediaDevices.getUserMedia({"audio": true, "video": false})
+        .then((stream) => {
+          this.audioStream = stream;
+        })
+      },
+
+      getUserVideo: function() {
+        navigator.mediaDevices.getUserMedia({"audio": false, "video": true})
+        .then((stream) => {
+          this.videoStream = stream;
+          this.renderVideo(stream);
+        })
+      },
+
+      renderVideo: function(stream) {
+        this.video = this.$refs.video;
+        this.video.srcObject = stream;
+      }
+
+
+    },
+    
+    computed: {
+      mediaArgs: function() {
+        let args = {"audio": false, "video": false};
+        if (this.toggleMedia.includes(0)){
+          args["audio"] = true;
+          this.getUserAudio();
+        }
+        if (this.toggleMedia.includes(1)){
+          args["video"] = true;
+          this.getUserVideo();
+        }
+        return args;
+      },
+
+
     },
     
     mounted() {
