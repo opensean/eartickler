@@ -7,13 +7,11 @@ export function main(p) {
   let mic, fft, canvas, fadeHeight, fadeIncrement, maxFadeHeight;
   
   p.setup = function () {
-      canvas = p.createCanvas(p.windowWidth/3, p.windowHeight/3);
+      canvas = p.createCanvas(p.windowWidth, p.windowHeight/8);
       canvas.parent('audioVis');
 
       //p.noFill();
       p.fill(255,255,255);
-      p.textSize(p.windowWidth / 40);
-      p.textAlign(p.LEFT, p.CENTER);
       //canvas.mousePressed(p.userStartAudio);
       mic = new p5.AudioIn();
       mic.start();

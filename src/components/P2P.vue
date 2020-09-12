@@ -1,10 +1,10 @@
 <template>
   <v-container t fluid>
     <v-row justify="center" align="center">
-      <answer-media-call v-if="incoming" :call="call" :answerPrompt="answerPrompt"/> 
-      <make-media-call v-if="outgoing" :peer="peer" :mediaArgs="mediaArgs" :remotePeerId="remotePeerId"/> 
-      <video v-if="this.toggleMedia.includes(1)" ref="video" id="video" autoplay></video>
-      <audio-visualizer v-if="this.toggleMedia.includes(0)" />
+      <answer-media-call v-if="incoming" :call="call" :useMedia="userMedia" :answerPrompt="answerPrompt"/> 
+      <make-media-call v-if="outgoing" :peer="peer" :userMedia="userMedia" :remotePeerId="remotePeerId"/> 
+      <video ref="video" id="video" autoplay></video>
+      <audio-visualizer v-if="enableAudio"/>
     </v-row>
     <v-row justify="center" align="center">
       <v-col cols="6" id = "connect-to-peer">
@@ -27,24 +27,16 @@
       </v-col>
     </v-row>
     <v-row justify="center">
-            <v-btn-toggle
-              v-model="toggleMedia"
-              multiple
-            >
-                  <v-btn
-                   outlined
-                   @click="getUserAudio"
-                  >
-                    <v-icon center>{{ enableAudioIcon }}</v-icon>
-                  </v-btn>
-                  <v-btn
-                   outlined
-                   @click="getUserVideo"
-                   
-                  >
-                    <v-icon center>{{ enableVideoIcon }}</v-icon>
-                  </v-btn>
-             </v-btn-toggle>
+      <v-switch @click="toggleAudio" v-model="enableAudio" value input-value="true">
+        <template v-slot:prepend>
+          <v-icon  >{{ enableAudioIcon }}</v-icon>
+        </template>
+      </v-switch>
+      <v-switch @click="toggleVideo" v-model="enableVideo" value input-value="false">
+        <template v-slot:prepend>
+          <v-icon >{{ enableVideoIcon }}</v-icon>
+        </template>
+      </v-switch>
     </v-row>
     <v-row justify="center" class="text-center">
       <v-col col="6">
@@ -75,12 +67,16 @@
        peer: null,
        call: null,
        answerPrompt: true,
-       audioStream: null,
-       videoStream: null,
+       toggleMedia: [],
+       enableAudio: true,
+       enableVideo: false,
+       userMedia: null,
+       userAudioStream: null,
+       userVideoStream: null,
+       mediaArgs:  {"audio": true, "video": false, "stream":null},
        remotePeerId: null,
        incoming: false,
        outgoing: false,
-       toggleMedia: [],
        messages: null,
        bannerMessage: null,
        makeCallIcon: mdiHumanGreetingProximity,
@@ -95,47 +91,67 @@
         this.messages = "connecting to ".concat(this.remotePeerId);
       },
 
-      getUserAudio: function() {
-        navigator.mediaDevices.getUserMedia({"audio": true, "video": false})
-        .then((stream) => {
-          this.audioStream = stream;
-        })
-      },
-
-      getUserVideo: function() {
-        navigator.mediaDevices.getUserMedia({"audio": false, "video": true})
-        .then((stream) => {
-          this.videoStream = stream;
-          this.renderVideo(stream);
-        })
-      },
 
       renderVideo: function(stream) {
         this.video = this.$refs.video;
-        this.video.srcObject = stream;
-      }
+        if (stream) {
+          this.video.srcObject = stream;
+        }
+        else {
+          this.video.pause();
+          this.video.removeAttribute('src'); // empty source
+          this.video.load();
+        }
+        
+      },
+
+      toggleAudio: function(){
+        let arrAudio = this.userAudioStream.getAudioTracks();
+        if (this.enableAudio) {
+          for (let i = 0; i < arrAudio.length; i++){
+              this.userMedia.addTrack(arrAudio[i]);
+            }
+        }
+        else {
+            for (let i = 0; i < arrAudio.length; i++){
+              this.userMedia.removeTrack(arrAudio[i]);
+            }
+          }
+      },
+
+      toggleVideo: function(){
+        let arrVideo = this.userVideoStream.getVideoTracks();
+        if (this.enableVideo) {
+          for (let i = 0; i < arrVideo.length; i++){
+              this.userMedia.addTrack(arrVideo[i]);
+            }
+          this.renderVideo(this.userMedia);
+        }
+        else {
+          for (let i = 0; i < arrVideo.length; i++){
+              this.userMedia.removeTrack(arrVideo[i]);
+            }
+          this.renderVideo(this.userMedia);
+          }
+      },
+
 
 
     },
     
     computed: {
-      mediaArgs: function() {
-        let args = {"audio": false, "video": false};
-        if (this.toggleMedia.includes(0)){
-          args["audio"] = true;
-          this.getUserAudio();
-        }
-        if (this.toggleMedia.includes(1)){
-          args["video"] = true;
-          this.getUserVideo();
-        }
-        return args;
-      },
-
-
     },
     
     mounted() {
+     navigator.mediaDevices.getUserMedia({"audio": true, "video": true})
+        .then((stream) => {
+          this.userMedia = stream;
+          this.userAudioStream = new MediaStream(stream.getAudioTracks());
+          this.userVideoStream = new MediaStream(stream.getVideoTracks());
+          this.toggleAudio();
+          this.toggleVideo();
+        });
+
       // References 
       // https://glitch.com/~peerjs-video
       // https://github.com/peers/peerjs

@@ -32,6 +32,9 @@
      call: {
        type: Object,
      },
+     userMedia: {
+       type: MediaStream,
+     },
      answerPrompt: {
        type: Boolean,
      }
@@ -53,26 +56,24 @@
 
       answerMediaCall: function () {
         this.showAnswerPrompt = false;
-        navigator.mediaDevices.getUserMedia({video: true, audio: true})
-        .then((stream) => {
-          this.call.answer(stream); // Answer the call with an A/V stream.
-          this.call.on('stream', this.renderVideo);
-          this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
-          //this.loading = false;
-        })
-        .catch((err) => {
-          console.error('Failed to get local stream', err);
-         
-        })
-        .finally(() => {
-          this.loading = false;
-        });
+        this.call.answer(this.userMedia); // Answer the call with an A/V stream.
+        this.call.on('stream', this.renderVideo);
+        this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
+        this.loading = false;
       },
 
       renderVideo: function(stream) {
         this.video = this.$refs.video;
-        this.video.srcObject = stream;
-      }
+        if (stream) {
+          this.video.srcObject = stream;
+        }
+        else {
+          this.video.pause();
+          this.video.removeAttribute('src'); // empty source
+          this.video.load();
+        }
+        
+      },
 
     }
   }
