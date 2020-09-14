@@ -152,16 +152,9 @@
           this.loading = false;
           this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
           this.remoteStream = stream;
-          this.remoteStream.renderVideo = this.renderVideo;
-          this.remoteStream.onremovetrack = function (event) {
-            console.log(event);
-            this.renderVideo(null, "remote");
-          }
-          this.remoteStream.onaddtrack = function (event) {
-            console.log(event);
-            //check for event.kind audio or video?
-            this.renderVideo(this.remoteStream, "remote");
-          }
+          //this.remoteStream.renderVideo = this.renderVideo;
+          this.remoteStream.onremovetrack = this.handleRemoveRemoteTrack;
+          this.remoteStream.onaddtrack = this.handleAddRemoteTrack;
 
           console.log(this.remoteStream);
         });
@@ -184,6 +177,21 @@
         }
         
       },
+      
+      handleRemoveRemoteTrack: function(event) {
+            console.log('${event.track.kind} track removed');
+            if(event.track.kind == "video") {
+              this.renderVideo(this.remoteStream, "remote");
+            }
+      },
+      handleAddRemoteTrack: function(event) {
+            console.log('${event.track.kind} track added');
+            if(event.track.kind == "video") {
+              this.renderVideo(this.remoteStream, "remote");
+            }
+      },
+
+
 
       toggleAudio: function(){
         let arrAudio = this.userAudioStream.getAudioTracks();
@@ -204,38 +212,29 @@
       },
 
       toggleVideo: function(){
-        let arrVideo = this.userVideoStream.getVideoTracks();
+        let videoTrack = this.userVideoStream.getVideoTracks()[0];
+        if(this.call){
+          var sender =  this.call.peerConnection.getSenders().find(function(s) {
+            return s.track.kind == videoTrack.kind;
+          });
+          console.log('found sender:', sender);
+        }
         if (this.enableVideo) {
-          for (let i = 0; i < arrVideo.length; i++){
-            this.userMedia.addTrack(arrVideo[i]);
-            if(this.call){
-              try {
-              this.call.peerConnection.addTrack(arrVideo[i]);
-
-              console.log(this.call.peerConnection.getSenders());
-              }
-              catch (err){
-                console.log(err);
-              }
-            }
+          this.userMedia.addTrack(videoTrack);
+          if (sender){
+              console.log("enable video track");
+              sender.track.enabled = true;
+              console.log(sender);
           }
           this.renderVideo(this.userMedia, "local");
         }
         else {
-          for (let i = 0; i < arrVideo.length; i++){
-              this.userMedia.removeTrack(arrVideo[i]);
-          }
-          if(this.call){
-            let senders =  this.call.peerConnection.getSenders();
-            if(senders){
-              for (let i = 0; i < senders.length; i++){
-                if(senders[i].track.kind == "video"){
-                  this.call.peerConnection.removeTrack(senders[i]);
-                }
-              }
-            }
-
-            console.log(this.call.peerConnection.getSenders());
+          this.userMedia.removeTrack(videoTrack);
+          if(sender){
+              console.log("disable video track");
+              //sender.replaceTrack();
+              sender.track.enabled = false;
+              console.log(sender);
           }
           this.renderVideo(this.userMedia, "local");
           }
@@ -256,6 +255,7 @@
           this.userVideoStream = new MediaStream(stream.getVideoTracks());
           this.toggleAudio();
           this.toggleVideo();
+
         });
 
       // References 
