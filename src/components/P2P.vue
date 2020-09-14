@@ -1,9 +1,34 @@
 <template>
   <v-container t fluid>
+      <v-progress-linear
+        :active="loading"
+        :indeterminate="loading"
+        absolute
+        top
+      ></v-progress-linear>
+    <v-row justify="center">  
+      <v-card
+        class="mx-auto"
+        v-if="showAnswerPrompt"
+      >
+        <v-card-text>
+          <div>Incoming connection from {{ call.peer }}</div>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="answerMediaCall" text>Accept</v-btn>
+          <v-btn text>Decline</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-row>
     <v-row justify="center" align="center">
-      <answer-media-call v-if="incoming" :call="call" :useMedia="userMedia" :answerPrompt="answerPrompt"/> 
-      <make-media-call v-if="outgoing" :peer="peer" :userMedia="userMedia" :remotePeerId="remotePeerId"/> 
-      <video ref="video" id="video" autoplay></video>
+      <v-col cols="6">
+        <video ref="videolocal" id="videolocal" autoplay></video>
+      </v-col>
+      <v-col cols="6" v-if="call" >
+        <video ref="videoremote" id="videoremote" autoplay></video>
+      </v-col>
+    </v-row>
+    <v-row justify="center" align="center">
       <audio-visualizer v-if="enableAudio"/>
     </v-row>
     <v-row justify="center" align="center">
@@ -17,7 +42,7 @@
                   <v-btn
                    outlined
                    fab
-                   @click="makeCall"
+                   @click="makeMediaCall"
                   >
                     <v-icon center>{{ makeCallIcon }}</v-icon>
                   </v-btn>
@@ -51,21 +76,20 @@
   import { mdiHumanGreetingProximity } from '@mdi/js';
   import { mdiMicrophoneOutline } from '@mdi/js';
   import { mdiVideoOutline } from '@mdi/js';
-  import AnswerMediaCall from "@/components/AnswerMediaCall.vue";
-  import MakeMediaCall from "@/components/MakeMediaCall.vue";
+  //import AnswerMediaCall from "@/components/AnswerMediaCall.vue";
+  //import MakeMediaCall from "@/components/MakeMediaCall.vue";
   import AudioVisualizer from "@/components/AudioVisualizer.vue";
 
   export default {
     name: 'P2P',
     components: {
-      AnswerMediaCall,
-      MakeMediaCall,
       AudioVisualizer
     },
     data: () => ({
        loading: false,
        peer: null,
        call: null,
+       connection: null,
        answerPrompt: true,
        toggleMedia: [],
        enableAudio: true,
@@ -73,9 +97,9 @@
        userMedia: null,
        userAudioStream: null,
        userVideoStream: null,
-       mediaArgs:  {"audio": true, "video": false, "stream":null},
+       showAnswerPrompt: false,
+       remoteStream: null,
        remotePeerId: null,
-       incoming: false,
        outgoing: false,
        messages: null,
        bannerMessage: null,
@@ -85,15 +109,71 @@
     }),
 
     methods: {
+      answerMediaCall: function () {
+        this.showAnswerPrompt = false;
+        this.call.answer(this.userMedia); // Answer the call with an A/V stream.
+        this.messages = "connecting to ".concat(JSON.stringify(this.call.peer));
+        this.call.on('stream', (stream) => {
+          this.renderVideo(stream, "remote");
+          this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
+          this.loading = false;
+          this.remoteStream = stream;
+          this.remoteStream.renderVideo = this.renderVideo;
+          this.remoteStream.onremovetrack = function (event) {
+            console.log(event);
+            this.renderVideo(null, "remote");
+          }
+          this.remoteStream.onaddtrack = function (event) {
+            console.log(event);
+            //check for event.kind audio or video?
+            this.renderVideo(this.remoteStream, "remote");
+          }
 
-      makeCall: function() {
-        this.outgoing = true;
-        this.messages = "connecting to ".concat(this.remotePeerId);
+          console.log(this.remoteStream);
+        });
       },
 
+      makeMediaCall: function() {
+        this.loading = true;
+        this.connection = this.peer.connect(this.remotePeerId);
+        
+        this.connection.on('data', (data) => {
+          this.messages = 'received: '.concat(JSON.stringify(data));
+        });
 
-      renderVideo: function(stream) {
-        this.video = this.$refs.video;
+        this.connection.on('open', () => {
+          this.connection.send('hi!');
+        });  
+ 
+        this.call = this.peer.call(this.remotePeerId, this.userMedia);
+        this.messages = "connecting to ".concat(JSON.stringify(this.call.peer));
+        this.call.on('stream', (stream) => {
+          this.renderVideo(stream, "remote");
+          this.loading = false;
+          this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
+          this.remoteStream = stream;
+          this.remoteStream.renderVideo = this.renderVideo;
+          this.remoteStream.onremovetrack = function (event) {
+            console.log(event);
+            this.renderVideo(null, "remote");
+          }
+          this.remoteStream.onaddtrack = function (event) {
+            console.log(event);
+            //check for event.kind audio or video?
+            this.renderVideo(this.remoteStream, "remote");
+          }
+
+          console.log(this.remoteStream);
+        });
+      },
+
+      renderVideo: function(stream, user) {
+        if (user == "local") {
+          this.video = this.$refs.videolocal;
+        }
+        if (user == "remote") {
+          this.video = this.$refs.videoremote;
+        }
         if (stream) {
           this.video.srcObject = stream;
         }
@@ -115,6 +195,10 @@
         else {
             for (let i = 0; i < arrAudio.length; i++){
               this.userMedia.removeTrack(arrAudio[i]);
+
+              //if(this.call){
+                //this.call.peerConnection.removeTrack(arrAudio[i]);
+              //}
             }
           }
       },
@@ -123,15 +207,37 @@
         let arrVideo = this.userVideoStream.getVideoTracks();
         if (this.enableVideo) {
           for (let i = 0; i < arrVideo.length; i++){
-              this.userMedia.addTrack(arrVideo[i]);
+            this.userMedia.addTrack(arrVideo[i]);
+            if(this.call){
+              try {
+              this.call.peerConnection.addTrack(arrVideo[i]);
+
+              console.log(this.call.peerConnection.getSenders());
+              }
+              catch (err){
+                console.log(err);
+              }
             }
-          this.renderVideo(this.userMedia);
+          }
+          this.renderVideo(this.userMedia, "local");
         }
         else {
           for (let i = 0; i < arrVideo.length; i++){
               this.userMedia.removeTrack(arrVideo[i]);
+          }
+          if(this.call){
+            let senders =  this.call.peerConnection.getSenders();
+            if(senders){
+              for (let i = 0; i < senders.length; i++){
+                if(senders[i].track.kind == "video"){
+                  this.call.peerConnection.removeTrack(senders[i]);
+                }
+              }
             }
-          this.renderVideo(this.userMedia);
+
+            console.log(this.call.peerConnection.getSenders());
+          }
+          this.renderVideo(this.userMedia, "local");
           }
       },
 
@@ -186,8 +292,10 @@
       // Handle incoming voice/video connection
       this.peer.on('call', (call) => {
         this.loading = true;
-        this.incoming = true;
+        this.showAnswerPrompt = true;
+        console.log(call);
         this.call = call;
+
       })
     }
   }
