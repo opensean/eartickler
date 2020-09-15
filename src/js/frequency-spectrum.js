@@ -5,9 +5,9 @@ export function main(p) {
   
   
   let mic, fft, canvas, fadeHeight, fadeIncrement, maxFadeHeight;
-  
+   
   p.setup = function () {
-      canvas = p.createCanvas(p.windowWidth, p.windowHeight/8);
+      canvas = p.createCanvas(p.windowWidth/3, p.windowHeight/8);
       canvas.parent('audioVis');
 
       //p.noFill();
@@ -25,6 +25,7 @@ export function main(p) {
       fadeHeight = 0;
       maxFadeHeight = 225;
       fadeIncrement = 5;
+      p.resizeCanvas(p.windowWidth/3, p.windowHeight/8);
   };
   
   p.draw = function () {
@@ -35,6 +36,7 @@ export function main(p) {
       // If the volume > 0.1, the frequency spectrum is drawn
       //let threshold = 0.01;
       
+  //    p.background(255, 204, 0);
       p.clear();
      
       if (fadeHeight > maxFadeHeight) {
@@ -66,7 +68,7 @@ export function main(p) {
   };
   
   p.windowResized = function () {
-      p.resizeCanvas(p.windowWidth/3, p.windowHeight/3);
+      p.resizeCanvas(p.windowWidth/3, p.windowHeight/8);
   };
 }
 

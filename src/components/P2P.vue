@@ -1,5 +1,5 @@
 <template>
-  <v-container t fluid>
+  <v-container fluid>
       <v-progress-linear
         :active="loading"
         :indeterminate="loading"
@@ -20,18 +20,38 @@
         </v-card-actions>
       </v-card>
     </v-row>
-    <v-row justify="center" align="center">
-      <v-col cols="6">
-        <video ref="videolocal" id="videolocal" autoplay></video>
+    <v-row dense>
+      <v-col>
+        <v-card class="mx-auto" max-width="500">
+              <video width="500" ref="videolocal" id="videolocal" autoplay></video>
+          <v-row >
+          <v-col cols = "12" class = "mt-n16 pa-0">
+            <audio-visualizer v-if="enableAudio"/>
+          </v-col>
+          <v-col cols = "12" class=" pt-0" >
+            <v-card-actions>
+            <v-switch @click="toggleAudio" v-model="enableAudio" value input-value="true">
+              <template v-slot:prepend>
+                <v-icon  >{{ enableAudioIcon }}</v-icon>
+              </template>
+            </v-switch>
+            <v-switch @click="toggleVideo" v-model="enableVideo" value input-value="false">
+              <template v-slot:prepend>
+                <v-icon >{{ enableVideoIcon }}</v-icon>
+              </template>
+            </v-switch>
+             </v-card-actions>
+          </v-col>
+        </v-row>
+        </v-card>
       </v-col>
-      <v-col cols="6" v-if="call" >
-        <video ref="videoremote" id="videoremote" autoplay></video>
+      <v-col v-for="p in remotePeers" :key="p.peer" >
+        <v-card >
+          <video widht="500" id="p.peer" autoplay></video>
+        </v-card>
       </v-col>
     </v-row>
-    <v-row justify="center" align="center">
-      <audio-visualizer v-if="enableAudio"/>
-    </v-row>
-    <v-row justify="center" align="center">
+    <v-row justify="center">
       <v-col cols="6" id = "connect-to-peer">
         <v-text-field 
           label="Enter a peer id"
@@ -50,18 +70,6 @@
 
         </v-text-field>
       </v-col>
-    </v-row>
-    <v-row justify="center">
-      <v-switch @click="toggleAudio" v-model="enableAudio" value input-value="true">
-        <template v-slot:prepend>
-          <v-icon  >{{ enableAudioIcon }}</v-icon>
-        </template>
-      </v-switch>
-      <v-switch @click="toggleVideo" v-model="enableVideo" value input-value="false">
-        <template v-slot:prepend>
-          <v-icon >{{ enableVideoIcon }}</v-icon>
-        </template>
-      </v-switch>
     </v-row>
     <v-row justify="center" class="text-center">
       <v-col col="6">
@@ -98,6 +106,7 @@
        userAudioStream: null,
        userVideoStream: null,
        showAnswerPrompt: false,
+       remotePeers: [],
        remoteStream: null,
        remotePeerId: null,
        outgoing: false,
@@ -114,21 +123,11 @@
         this.call.answer(this.userMedia); // Answer the call with an A/V stream.
         this.messages = "connecting to ".concat(JSON.stringify(this.call.peer));
         this.call.on('stream', (stream) => {
-          this.renderVideo(stream, "remote");
+          this.remotePeers.push({"stream":stream, "peer":this.call.peer});
+          console.log(this.remotePeers);
+          //this.renderVideo(stream, "remote");
           this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
           this.loading = false;
-          this.remoteStream = stream;
-          this.remoteStream.renderVideo = this.renderVideo;
-          this.remoteStream.onremovetrack = function (event) {
-            console.log(event);
-            this.renderVideo(null, "remote");
-          }
-          this.remoteStream.onaddtrack = function (event) {
-            console.log(event);
-            //check for event.kind audio or video?
-            this.renderVideo(this.remoteStream, "remote");
-          }
-
           console.log(this.remoteStream);
         });
       },
@@ -147,17 +146,7 @@
  
         this.call = this.peer.call(this.remotePeerId, this.userMedia);
         this.messages = "connecting to ".concat(JSON.stringify(this.call.peer));
-        this.call.on('stream', (stream) => {
-          this.renderVideo(stream, "remote");
-          this.loading = false;
-          this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
-          this.remoteStream = stream;
-          //this.remoteStream.renderVideo = this.renderVideo;
-          this.remoteStream.onremovetrack = this.handleRemoveRemoteTrack;
-          this.remoteStream.onaddtrack = this.handleAddRemoteTrack;
 
-          console.log(this.remoteStream);
-        });
       },
 
       renderVideo: function(stream, user) {
@@ -178,19 +167,6 @@
         
       },
       
-      handleRemoveRemoteTrack: function(event) {
-            console.log('${event.track.kind} track removed');
-            if(event.track.kind == "video") {
-              this.renderVideo(this.remoteStream, "remote");
-            }
-      },
-      handleAddRemoteTrack: function(event) {
-            console.log('${event.track.kind} track added');
-            if(event.track.kind == "video") {
-              this.renderVideo(this.remoteStream, "remote");
-            }
-      },
-
 
 
       toggleAudio: function(){
