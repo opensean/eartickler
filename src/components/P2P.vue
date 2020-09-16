@@ -21,10 +21,10 @@
       </v-card>
     </v-row>
     <v-row dense>
-      <v-col>
+      <v-col cols="12">
         <call-card v-if="userMedia" :local=true :userMedia="userMedia" :call="call" />
       </v-col>
-      <v-col v-for="p in remotePeers" :key="p.peer" >
+      <v-col cols = "12" v-for="p in remotePeers" :key="p.peer" >
         <call-card :local=false  :userMedia="p.stream" :call="call" />
       </v-col>
     </v-row>

@@ -11,19 +11,20 @@
     props: {
       userMedia: MediaStream,
       maxWidth: Number,
+      maxHeight: Number,
     },
 
     data: () => ({
     }),
     
     methods: {
-      createNewSketch: function (userMedia, maxWidth) {   
+      createNewSketch: function (userMedia, maxWidth, maxHeight) {   
         let p5Back = function( sketch ) {
           let fft
 
           console.log(userMedia);
           sketch.setup = function () {
-            sketch.createCanvas(maxWidth, sketch.windowHeight/8);
+            sketch.createCanvas(maxWidth, maxHeight);
 
             //sketch.fill(255,255,255);
             sketch.noFill();
@@ -37,7 +38,7 @@
             console.log(source);
             fft = new p5.FFT();
             fft.setInput(source);
-            sketch.resizeCanvas(maxWidth, sketch.windowHeight/8);
+            sketch.resizeCanvas(maxWidth, maxHeight);
          };
   
          sketch.draw = function () {
@@ -56,7 +57,7 @@
          };
        
          sketch.windowResized = function () {
-           sketch.resizeCanvas(maxWidth, sketch.windowHeight/8);
+           sketch.resizeCanvas(maxWidth, maxHeight);
         };
         }
         return new p5( p5Back, userMedia.id.concat("-audioVis"));
@@ -66,7 +67,7 @@
 
     mounted() {
        if(this.userMedia.getAudioTracks()[0].enabled){ 
-         this.createNewSketch(this.userMedia, this.maxWidth);
+         this.createNewSketch(this.userMedia, this.maxWidth, this.maxHeight);
        }
        //var spectrum = require('@/js/frequency-spectrum.js');
        //spectrum.main.userMedia = this.userMedia;
