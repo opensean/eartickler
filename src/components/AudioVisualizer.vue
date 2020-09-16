@@ -1,5 +1,5 @@
 <template>
-        <div id="audioVis"></div>
+        <div :id="userMedia.id + '-audioVis'"></div>
 </template>
 
 <script>
@@ -10,19 +10,20 @@
     name: 'AudioVisualizer',
     props: {
       userMedia: MediaStream,
+      maxWidth: Number,
     },
 
     data: () => ({
     }),
     
     methods: {
-      createNewSketch: function (userMedia) {   
+      createNewSketch: function (userMedia, maxWidth) {   
         let p5Back = function( sketch ) {
           let fft
 
           console.log(userMedia);
           sketch.setup = function () {
-            sketch.createCanvas(sketch.windowWidth/2, sketch.windowHeight/8);
+            sketch.createCanvas(maxWidth, sketch.windowHeight/8);
 
             //sketch.fill(255,255,255);
             sketch.noFill();
@@ -36,7 +37,7 @@
             console.log(source);
             fft = new p5.FFT();
             fft.setInput(source);
-            sketch.resizeCanvas(sketch.windowWidth/2, sketch.windowHeight/8);
+            sketch.resizeCanvas(maxWidth, sketch.windowHeight/8);
          };
   
          sketch.draw = function () {
@@ -55,17 +56,17 @@
          };
        
          sketch.windowResized = function () {
-           sketch.resizeCanvas(sketch.windowWidth/2, sketch.windowHeight/8);
+           sketch.resizeCanvas(maxWidth, sketch.windowHeight/8);
         };
         }
-        return new p5( p5Back, "audioVis" );
+        return new p5( p5Back, userMedia.id.concat("-audioVis"));
 
         }
     },
 
     mounted() {
        if(this.userMedia.getAudioTracks()[0].enabled){ 
-         this.createNewSketch(this.userMedia);
+         this.createNewSketch(this.userMedia, this.maxWidth);
        }
        //var spectrum = require('@/js/frequency-spectrum.js');
        //spectrum.main.userMedia = this.userMedia;
