@@ -26,7 +26,7 @@
               <video width="500" ref="videolocal" id="videolocal" autoplay></video>
           <v-row >
           <v-col cols = "12" class = "mt-n16 pa-0">
-            <audio-visualizer v-if="enableAudio"/>
+            <audio-visualizer v-if="enableAudio" :userAudio="userAudioStream"/>
           </v-col>
           <v-col cols = "12" class=" pt-0" >
             <v-card-actions>
@@ -46,8 +46,27 @@
         </v-card>
       </v-col>
       <v-col v-for="p in remotePeers" :key="p.peer" >
-        <v-card >
-          <video widht="500" id="p.peer" autoplay></video>
+        <v-card class="mx-auto" max-width="500">
+          <video width="500" :id="p.peer" :ref="p.peer" autoplay></video>
+          <v-row >
+          <v-col cols = "12" class = "mt-n16 pa-0">
+            <audio-visualizer v-if="enableAudio"/>
+          </v-col>
+          <v-col cols = "12" class=" pt-0" >
+            <v-card-actions>
+            <v-switch @click="toggleAudio" v-model="enableAudio" value input-value="true">
+              <template v-slot:prepend>
+                <v-icon  >{{ enableAudioIcon }}</v-icon>
+              </template>
+            </v-switch>
+            <v-switch @click="toggleVideo" v-model="enableVideo" value input-value="false">
+              <template v-slot:prepend>
+                <v-icon >{{ enableVideoIcon }}</v-icon>
+              </template>
+            </v-switch>
+             </v-card-actions>
+          </v-col>
+        </v-row>
         </v-card>
       </v-col>
     </v-row>
@@ -106,7 +125,7 @@
        userAudioStream: null,
        userVideoStream: null,
        showAnswerPrompt: false,
-       remotePeers: [],
+       remotePeers: {},
        remoteStream: null,
        remotePeerId: null,
        outgoing: false,
@@ -123,12 +142,15 @@
         this.call.answer(this.userMedia); // Answer the call with an A/V stream.
         this.messages = "connecting to ".concat(JSON.stringify(this.call.peer));
         this.call.on('stream', (stream) => {
-          this.remotePeers.push({"stream":stream, "peer":this.call.peer});
+          this.remotePeers[this.call.peer] = {"stream":stream, "peer":this.call.peer};
+          this.$nextTick(() => {
+            // Scroll Down
+            this.renderPeers();
+          });
           console.log(this.remotePeers);
           //this.renderVideo(stream, "remote");
           this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
           this.loading = false;
-          console.log(this.remoteStream);
         });
       },
 
@@ -145,7 +167,29 @@
         });  
  
         this.call = this.peer.call(this.remotePeerId, this.userMedia);
+        this.call.on('stream', (stream) => {
+          this.remotePeers[this.call.peer] = {"stream":stream, "peer":this.call.peer};
+          console.log(this.remotePeers);
+          this.$nextTick(() => {
+            // Scroll Down
+            this.renderPeers();
+          });
+          //this.renderVideo(stream, "remote");
+          this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
+          this.loading = false;
+        });
         this.messages = "connecting to ".concat(JSON.stringify(this.call.peer));
+
+      },
+
+      renderPeers: function (){
+        for (var key in this.remotePeers) {
+          console.log(key);
+          console.log(this.$refs);
+          let video = this.$refs[key][0];
+          console.log(video);
+          video.srcObject = this.remotePeers[key]["stream"];
+        }
 
       },
 
