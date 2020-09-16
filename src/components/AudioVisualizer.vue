@@ -1,10 +1,5 @@
 <template>
-  <v-container>
-    <v-row class="text-center">
-      <v-col cols="12" id = "audioVis">
-      </v-col>
-    </v-row>
-  </v-container>
+        <div id="audioVis"></div>
 </template>
 
 <script>
@@ -14,74 +9,66 @@
   export default {
     name: 'AudioVisualizer',
     props: {
-      userAudio: MediaStream,
+      userMedia: MediaStream,
     },
 
     data: () => ({
     }),
     
-    mounted() {
-      let sketch = function(p) {
-        let fft, canvas, fadeHeight, fadeIncrement, maxFadeHeight, userAudio
-        p.setup = function () {
-          canvas = p.createCanvas(p.windowWidth/3, p.windowHeight/8);
-          canvas.parent('audioVis');
+    methods: {
+      createNewSketch: function (userMedia) {   
+        let p5Back = function( sketch ) {
+          let fft
 
-          //p.noFill();
-          p.fill(255,255,255);
-          //canvas.mousePressed(p.userStartAudio);
-          //mic = new p5.AudioIn();
-          //mic.start();
-          console.log(userAudio);
-          //if (p.getAudioContext().state !== 'running') {
-          //  p.getAudioContext().resume();
-         //}
-         //mic.connect(); //need headphone or get ready for feedback
-         fft = new p5.FFT();
-         //fft.setInput(mic);
-         fft.setInput(userAudio);
-         fadeHeight = 0;
-         maxFadeHeight = 225;
-         fadeIncrement = 5;
-         p.resizeCanvas(p.windowWidth/3, p.windowHeight/8);
-       };
+          console.log(userMedia);
+          sketch.setup = function () {
+            sketch.createCanvas(sketch.windowWidth/2, sketch.windowHeight/8);
+
+            //sketch.fill(255,255,255);
+            sketch.noFill();
+            console.log(userMedia);
+            if (sketch.getAudioContext().state !== 'running') {
+              sketch.getAudioContext().resume();
+            }
+
+            var audioCtx = sketch.getAudioContext();
+            var source = audioCtx.createMediaStreamSource(userMedia);
+            console.log(source);
+            fft = new p5.FFT();
+            fft.setInput(source);
+            sketch.resizeCanvas(sketch.windowWidth/2, sketch.windowHeight/8);
+         };
   
-       p.draw = function () {
-         // Get the overall volume (between 0 and 1.0)
-         //let volume = mic.getLevel();
+         sketch.draw = function () {
   
-         let spectrum = fft.analyze();
-         // If the volume > 0.1, the frequency spectrum is drawn
-        //let threshold = 0.01;
+           let spectrum = fft.analyze();
         
-    //    p.background(255, 204, 0);
-         p.clear();
-     
-         if (fadeHeight > maxFadeHeight) {
-           fadeHeight = maxFadeHeight;
-         }
+           sketch.clear();
 
-         if (fadeHeight < 0) {
-           fadeHeight = 0;
-         } 
+           sketch.stroke(255,255,255);
+           sketch.beginShape();
+           for (let i = 0; i < spectrum.length; i++) {
+             sketch.vertex(i, sketch.map(spectrum[i], 0, 255, sketch.height, 0));
+           }
+           sketch.endShape();
 
-
-  //    if (volume > 0) {    
-         p.noFill();
-         fadeHeight = fadeHeight - fadeIncrement;
-         p.beginShape();
-         for (let i = 0; i < spectrum.length; i++) {
-           p.vertex(i, p.map(spectrum[i], 0, 255, p.height, 0));
-         }
+         };
+       
+         sketch.windowResized = function () {
+           sketch.resizeCanvas(sketch.windowWidth/2, sketch.windowHeight/8);
+        };
         }
+        return new p5( p5Back, "audioVis" );
 
-      };
+        }
+    },
 
-      sketch.userAudio = this.userAudio;
-      console.log(sketch.userAudio);
-      new p5(sketch);
+    mounted() {
+       if(this.userMedia.getAudioTracks()[0].enabled){ 
+         this.createNewSketch(this.userMedia);
+       }
        //var spectrum = require('@/js/frequency-spectrum.js');
-       //spectrum.main.userAudio = this.userAudio;
+       //spectrum.main.userMedia = this.userMedia;
        //console.log(spectrum.main);
        //new p5(spectrum.main);
 

@@ -22,52 +22,10 @@
     </v-row>
     <v-row dense>
       <v-col>
-        <v-card class="mx-auto" max-width="500">
-              <video width="500" ref="videolocal" id="videolocal" autoplay></video>
-          <v-row >
-          <v-col cols = "12" class = "mt-n16 pa-0">
-            <audio-visualizer v-if="enableAudio" :userAudio="userAudioStream"/>
-          </v-col>
-          <v-col cols = "12" class=" pt-0" >
-            <v-card-actions>
-            <v-switch @click="toggleAudio" v-model="enableAudio" value input-value="true">
-              <template v-slot:prepend>
-                <v-icon  >{{ enableAudioIcon }}</v-icon>
-              </template>
-            </v-switch>
-            <v-switch @click="toggleVideo" v-model="enableVideo" value input-value="false">
-              <template v-slot:prepend>
-                <v-icon >{{ enableVideoIcon }}</v-icon>
-              </template>
-            </v-switch>
-             </v-card-actions>
-          </v-col>
-        </v-row>
-        </v-card>
+        <call-card v-if="userMedia" :local=true :userMedia="userMedia" :call="call" />
       </v-col>
       <v-col v-for="p in remotePeers" :key="p.peer" >
-        <v-card class="mx-auto" max-width="500">
-          <video width="500" :id="p.peer" :ref="p.peer" autoplay></video>
-          <v-row >
-          <v-col cols = "12" class = "mt-n16 pa-0">
-            <audio-visualizer v-if="enableAudio"/>
-          </v-col>
-          <v-col cols = "12" class=" pt-0" >
-            <v-card-actions>
-            <v-switch @click="toggleAudio" v-model="enableAudio" value input-value="true">
-              <template v-slot:prepend>
-                <v-icon  >{{ enableAudioIcon }}</v-icon>
-              </template>
-            </v-switch>
-            <v-switch @click="toggleVideo" v-model="enableVideo" value input-value="false">
-              <template v-slot:prepend>
-                <v-icon >{{ enableVideoIcon }}</v-icon>
-              </template>
-            </v-switch>
-             </v-card-actions>
-          </v-col>
-        </v-row>
-        </v-card>
+        <call-card :local=false  :userMedia="p.stream" :call="call" />
       </v-col>
     </v-row>
     <v-row justify="center">
@@ -105,12 +63,12 @@
   import { mdiVideoOutline } from '@mdi/js';
   //import AnswerMediaCall from "@/components/AnswerMediaCall.vue";
   //import MakeMediaCall from "@/components/MakeMediaCall.vue";
-  import AudioVisualizer from "@/components/AudioVisualizer.vue";
+  import CallCard from "@/components/CallCard.vue";
 
   export default {
     name: 'P2P',
     components: {
-      AudioVisualizer
+      CallCard
     },
     data: () => ({
        loading: false,
@@ -119,8 +77,6 @@
        connection: null,
        answerPrompt: true,
        toggleMedia: [],
-       enableAudio: true,
-       enableVideo: false,
        userMedia: null,
        userAudioStream: null,
        userVideoStream: null,
@@ -143,10 +99,10 @@
         this.messages = "connecting to ".concat(JSON.stringify(this.call.peer));
         this.call.on('stream', (stream) => {
           this.remotePeers[this.call.peer] = {"stream":stream, "peer":this.call.peer};
-          this.$nextTick(() => {
+          //this.$nextTick(() => {
             // Scroll Down
-            this.renderPeers();
-          });
+            //this.renderPeers();
+          //});
           console.log(this.remotePeers);
           //this.renderVideo(stream, "remote");
           this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
@@ -170,10 +126,10 @@
         this.call.on('stream', (stream) => {
           this.remotePeers[this.call.peer] = {"stream":stream, "peer":this.call.peer};
           console.log(this.remotePeers);
-          this.$nextTick(() => {
+          //this.$nextTick(() => {
             // Scroll Down
-            this.renderPeers();
-          });
+            //this.renderPeers();
+          //});
           //this.renderVideo(stream, "remote");
           this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
           this.loading = false;
@@ -273,8 +229,8 @@
           this.userMedia = stream;
           this.userAudioStream = new MediaStream(stream.getAudioTracks());
           this.userVideoStream = new MediaStream(stream.getVideoTracks());
-          this.toggleAudio();
-          this.toggleVideo();
+          //this.toggleAudio();
+          //this.toggleVideo();
 
         });
 
