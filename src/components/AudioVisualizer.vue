@@ -38,7 +38,7 @@
             console.log(source);
             fft = new p5.FFT();
             fft.setInput(source);
-            sketch.resizeCanvas(maxWidth, maxHeight);
+            //sketch.resizeCanvas(maxWidth, maxHeight);
          };
   
          sketch.draw = function () {
@@ -49,16 +49,17 @@
 
            sketch.stroke(255,255,255);
            sketch.beginShape();
+           /// spectrum.length defaults tp 1024
            for (let i = 0; i < spectrum.length; i++) {
-             sketch.vertex(i, sketch.map(spectrum[i], 0, 255, sketch.height, 0));
+             sketch.vertex(sketch.map(i, 0, 1024, 10, sketch.width- 30),  sketch.map(spectrum[i], 0, 255, sketch.height, 30));
            }
            sketch.endShape();
 
          };
        
-         sketch.windowResized = function () {
-           sketch.resizeCanvas(maxWidth, maxHeight);
-        };
+        //sketch.windowResized = function () {
+        //   sketch.resizeCanvas(maxWidth, maxHeight);
+        //};
         }
         return new p5( p5Back, userMedia.id.concat("-audioVis"));
 
