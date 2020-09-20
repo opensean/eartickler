@@ -22,10 +22,10 @@
     </v-row>
     <v-row dense>
       <v-col cols="12">
-        <call-card v-if="userMedia" :local=true :userMedia="userMedia" :call="call" />
+        <track v-if="userMedia" :enableAudio="enableAudio" :enableVideo="enableVideo" :local=true :userMedia="userMedia" :call="call" />
       </v-col>
       <v-col cols = "12" v-for="p in remotePeers" :key="p.peer" >
-        <call-card :local=false  :userMedia="p.stream" :call="call" />
+        <track :local=false :enableAudio="enableAudio" :enableVideo="enableVideo" :userMedia="p.stream" :call="call" />
       </v-col>
     </v-row>
     <v-row justify="center">
@@ -63,12 +63,12 @@
   import { mdiVideoOutline } from '@mdi/js';
   //import AnswerMediaCall from "@/components/AnswerMediaCall.vue";
   //import MakeMediaCall from "@/components/MakeMediaCall.vue";
-  import CallCard from "@/components/CallCard.vue";
+  import Track from "@/components/Track.vue";
 
   export default {
     name: 'P2P',
     components: {
-      CallCard
+      Track
     },
     data: () => ({
        loading: false,
@@ -76,15 +76,12 @@
        call: null,
        connection: null,
        answerPrompt: true,
-       toggleMedia: [],
        userMedia: null,
-       userAudioStream: null,
-       userVideoStream: null,
+       enableAudio: false,
+       enableVideo: false,
        showAnswerPrompt: false,
        remotePeers: {},
-       remoteStream: null,
        remotePeerId: null,
-       outgoing: false,
        messages: null,
        bannerMessage: null,
        makeCallIcon: mdiHumanGreetingProximity,
@@ -99,12 +96,7 @@
         this.messages = "connecting to ".concat(JSON.stringify(this.call.peer));
         this.call.on('stream', (stream) => {
           this.remotePeers[this.call.peer] = {"stream":stream, "peer":this.call.peer};
-          //this.$nextTick(() => {
-            // Scroll Down
-            //this.renderPeers();
-          //});
           console.log(this.remotePeers);
-          //this.renderVideo(stream, "remote");
           this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
           this.loading = false;
         });
@@ -126,11 +118,6 @@
         this.call.on('stream', (stream) => {
           this.remotePeers[this.call.peer] = {"stream":stream, "peer":this.call.peer};
           console.log(this.remotePeers);
-          //this.$nextTick(() => {
-            // Scroll Down
-            //this.renderPeers();
-          //});
-          //this.renderVideo(stream, "remote");
           this.messages = "connected to ".concat(JSON.stringify(this.call.peer));
           this.loading = false;
         });
@@ -138,85 +125,25 @@
 
       },
 
-      renderPeers: function (){
-        for (var key in this.remotePeers) {
-          console.log(key);
-          console.log(this.$refs);
-          let video = this.$refs[key][0];
-          console.log(video);
-          video.srcObject = this.remotePeers[key]["stream"];
-        }
-
-      },
-
-      renderVideo: function(stream, user) {
-        if (user == "local") {
-          this.video = this.$refs.videolocal;
-        }
-        if (user == "remote") {
-          this.video = this.$refs.videoremote;
-        }
-        if (stream) {
-          this.video.srcObject = stream;
+      initMedia: function () {
+        let audio = this.userMedia.getAudioTracks()[0];
+        let video = this.userMedia.getVideoTracks()[0];
+        if (this.enableAudio) {
+          audio.enabled = true;
         }
         else {
-          this.video.pause();
-          this.video.removeAttribute('src'); // empty source
-          this.video.load();
+          audio.enabled = false;
         }
         
-      },
-      
-
-
-      toggleAudio: function(){
-        let arrAudio = this.userAudioStream.getAudioTracks();
-        if (this.enableAudio) {
-          for (let i = 0; i < arrAudio.length; i++){
-              this.userMedia.addTrack(arrAudio[i]);
-            }
-        }
-        else {
-            for (let i = 0; i < arrAudio.length; i++){
-              this.userMedia.removeTrack(arrAudio[i]);
-
-              //if(this.call){
-                //this.call.peerConnection.removeTrack(arrAudio[i]);
-              //}
-            }
-          }
-      },
-
-      toggleVideo: function(){
-        let videoTrack = this.userVideoStream.getVideoTracks()[0];
-        if(this.call){
-          var sender =  this.call.peerConnection.getSenders().find(function(s) {
-            return s.track.kind == videoTrack.kind;
-          });
-          console.log('found sender:', sender);
-        }
         if (this.enableVideo) {
-          this.userMedia.addTrack(videoTrack);
-          if (sender){
-              console.log("enable video track");
-              sender.track.enabled = true;
-              console.log(sender);
-          }
-          this.renderVideo(this.userMedia, "local");
+          video.enabled = true;
         }
         else {
-          this.userMedia.removeTrack(videoTrack);
-          if(sender){
-              console.log("disable video track");
-              //sender.replaceTrack();
-              sender.track.enabled = false;
-              console.log(sender);
-          }
-          this.renderVideo(this.userMedia, "local");
-          }
-      },
+          video.enabled = false;
+        }
 
 
+      }
 
     },
     
@@ -227,11 +154,7 @@
      navigator.mediaDevices.getUserMedia({"audio": true, "video": true})
         .then((stream) => {
           this.userMedia = stream;
-          this.userAudioStream = new MediaStream(stream.getAudioTracks());
-          this.userVideoStream = new MediaStream(stream.getVideoTracks());
-          //this.toggleAudio();
-          //this.toggleVideo();
-
+          this.initMedia();
         });
 
       // References 

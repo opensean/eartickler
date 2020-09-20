@@ -1,26 +1,43 @@
 <template>
   <v-card class="mx-auto">
     <v-row >
-    <v-col cols = "4" :ref="userMedia.id + '-videoCol'">
-        <video :width="videoWidth" :ref="userMedia.id" :id="userMedia.id" autoplay></video>
-    </v-col>
-    <v-col cols = "8" :ref="userMedia.id + '-audoVisCol'" >
-      <audio-visualizer  v-if="enableAudio" :maxWidth="audioWidth" :maxHeight="audioHeight" :userMedia="userMedia" :key="audioComp" />
-    </v-col>
-    <v-col cols = "12" class=" pt-0" >
-      <v-card-actions v-if="local">
-      <v-switch @click="toggleAudio" v-model="enableAudio" value input-value="false">
+    <v-col cols = "1"  class = "pl-5" >
+      <v-switch @click="toggleAudio" :disabled="remote" v-model="switchAudio" value input-value="false">
         <template v-slot:prepend>
           <v-icon  >{{ enableAudioIcon }}</v-icon>
         </template>
       </v-switch>
-      <v-switch @click="toggleVideo" v-model="enableVideo" value input-value="false">
+      <v-switch @click="toggleVideo" :disabled="remote" v-model="switchVideo" value input-value="false">
         <template v-slot:prepend>
           <v-icon >{{ enableVideoIcon }}</v-icon>
         </template>
       </v-switch>
-       </v-card-actions>
     </v-col>
+    <v-col cols = "1" class = "pa-5">
+      <v-slider
+        v-model="volume"
+        min=0
+        max=100
+        vertical
+        :label="volumeStr"
+        @change="adjustGain"
+      >
+        <template v-slot:prepend align="center">
+          <v-icon >{{ volumeLow }}</v-icon>
+        </template>
+        <template v-slot:append>
+          <v-icon >{{ volumeUp }}</v-icon>
+        </template>
+      </v-slider>
+    </v-col>
+    <v-col cols = "3" :ref="userMedia.id + '-videoCol'">
+        <video :width="videoWidth" :ref="userMedia.id" :id="userMedia.id" autoplay></video>
+    </v-col>
+
+    <v-col cols = "7" :ref="userMedia.id + '-audoVisCol'" >
+      <audio-visualizer  :maxWidth="audioWidth" :maxHeight="audioHeight" :userMedia="userMedia" :key="audioComp" />
+    </v-col>
+
   </v-row>
   </v-card>
 </template>
@@ -29,9 +46,11 @@
   import AudioVisualizer from "@/components/AudioVisualizer.vue";
   import { mdiMicrophoneOutline } from '@mdi/js';
   import { mdiVideoOutline } from '@mdi/js';
-
+  import { mdiVolumeMinus } from '@mdi/js';
+  import { mdiVolumePlus } from '@mdi/js';
+  
   export default {
-    name: 'CallCard',
+    name: 'Track',
     components: {
       AudioVisualizer,
     },
@@ -40,25 +59,37 @@
       userMedia: MediaStream,
       call: Object,
       local: Boolean,
+      enableAudio: Boolean,
+      enableVideo: Boolean,
 
     },
     computed: {
-//      audioWidth: function (){
-//        return this.$refs[this.userMedia.id.concat("-audoVisCol")].clientWidth
-//      }, 
-//
-//      audioHeight: function (){
-//        return this.$refs[this.userMedia.id.concat("-audoVisCol")].clientHeight
-//      },
-//
-//      videoWidth: function (){
-//        if(this.enableVideo){
-//
-//          console.log(this.$refs[this.userMedia.id.concat("-videoCol")].clientWidth);
-//          return this.$refs[this.userMedia.id.concat("-videoCol")].clientWidth
-//        }
-//        return 100;
-//      },
+      remote: function () {
+        if(this.local){
+          return false;
+        }
+        else{
+          return true;
+        }
+      },
+      
+      volumeStr: function (){
+        return this.volume.toString();
+      },
+
+      audioCtx: function (){
+        return new (window.AudioContext || window.webkitAudioContext)();
+      },
+      
+      audioSrc: function (){
+         return this.audioCtx.createMediaStreamSource(this.userMedia);
+      },
+
+      gainNode: function (){
+        return this.audioCtx.createGain();
+      }
+
+
 
     },
     created() {
@@ -73,14 +104,22 @@
        audioWidth: 100,
        audioHeight: 200,
        audioComp: 0,
+       volume: 20,
        videoWidth: 100,
-       enableAudio: false,
-       enableVideo: false,
        enableAudioIcon: mdiMicrophoneOutline,
        enableVideoIcon: mdiVideoOutline,
+       switchAudio: false,
+       switchVideo: false,
+       volumeUp: mdiVolumePlus,
+       volumeLow: mdiVolumeMinus,
     }),
     
     methods: {
+      adjustGain: function(){
+        this.gainNode.gain.setValueAtTime(this.volume, this.audioCtx.currentTime);
+
+      },
+
       resizeEventHandler: function(e) {
         console.log(e);
         this.videoWidth = this.$refs[this.userMedia.id.concat("-videoCol")].clientWidth;
@@ -99,13 +138,14 @@
           });
           console.log('found sender:', sender);
         }
-        if (this.enableAudio) {
+        if (this.switchAudio) {
           if (sender){
               console.log("enable video track");
               sender.track.enabled = true;
               console.log(sender);
           }
           track.enabled = true;
+          this.audioComp += 1;
         }
         else {
           if(sender){
@@ -127,7 +167,7 @@
           });
           console.log('found sender:', sender);
         }
-        if (this.enableVideo) {
+        if (this.switchVideo) {
           if (sender){
               console.log("enable video track");
               sender.track.enabled = true;
@@ -167,18 +207,10 @@
 
     mounted() {
       console.log(this.userMedia);   
-      if(this.local){
-        this.enableAudio = false;
-        this.enableAudio = false;
-      }
-      else{
-        this.enableAudio = true;
-        this.enableVideo = true;
-        this.renderVideo(this.userMedia);
-      }
-      this.toggleAudio();
-      this.toggleVideo();
+      this.renderVideo(this.userMedia);
       this.resizeEventHandler("mounted");
+      this.audioSrc.connect(this.gainNode);
+      this.gainNode.connect(this.audioCtx.destination);
     }
   }
     
