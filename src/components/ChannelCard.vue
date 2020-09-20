@@ -31,7 +31,7 @@
       </v-slider>
     </v-col>
     <v-col cols = "3" :ref="userMedia.id + '-videoCol'">
-        <video :width="videoWidth" :ref="userMedia.id" :id="userMedia.id" autoplay></video>
+        <video :width="videoWidth" :ref="userMedia.id" :id="userMedia.id" autoplay muted ></video>
     </v-col>
 
     <v-col cols = "7" :ref="userMedia.id + '-audoVisCol'" >
@@ -50,7 +50,7 @@
   import { mdiVolumePlus } from '@mdi/js';
   
   export default {
-    name: 'Track',
+    name: 'Channel',
     components: {
       AudioVisualizer,
     },
@@ -116,7 +116,7 @@
     
     methods: {
       adjustGain: function(){
-        this.gainNode.gain.setValueAtTime(this.volume, this.audioCtx.currentTime);
+        this.gainNode.gain.setValueAtTime(this.volume/100, this.audioCtx.currentTime);
 
       },
 

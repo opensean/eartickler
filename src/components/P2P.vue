@@ -22,10 +22,10 @@
     </v-row>
     <v-row dense>
       <v-col cols="12">
-        <track-card v-if="userMedia" :enableAudio="enableAudio" :enableVideo="enableVideo" :local=true :userMedia="userMedia" :call="call" />
+        <channel-card v-if="userMedia" :enableAudio="enableAudio" :enableVideo="enableVideo" :local=true :userMedia="userMedia" :call="call" />
       </v-col>
       <v-col cols = "12" v-for="p in remotePeers" :key="p.peer" >
-        <track-card :local=false :enableAudio="enableAudio" :enableVideo="enableVideo" :userMedia="p.stream" :call="call" />
+        <channel-card :local=false :enableAudio="enableAudio" :enableVideo="enableVideo" :userMedia="p.stream" :call="call" />
       </v-col>
     </v-row>
     <v-row justify="center">
@@ -63,12 +63,12 @@
   import { mdiVideoOutline } from '@mdi/js';
   //import AnswerMediaCall from "@/components/AnswerMediaCall.vue";
   //import MakeMediaCall from "@/components/MakeMediaCall.vue";
-  import TrackCard from "@/components/TrackCard.vue";
+  import ChannelCard from "@/components/ChannelCard.vue";
 
   export default {
     name: 'P2P',
     components: {
-      TrackCard
+      ChannelCard
     },
     data: () => ({
        loading: false,
@@ -126,8 +126,8 @@
       },
 
       initMedia: function () {
-        let audio = this.userMedia.getAudioTrackCards()[0];
-        let video = this.userMedia.getVideoTrackCards()[0];
+        let audio = this.userMedia.getAudioTracks()[0];
+        let video = this.userMedia.getVideoTracks()[0];
         if (this.enableAudio) {
           audio.enabled = true;
         }
