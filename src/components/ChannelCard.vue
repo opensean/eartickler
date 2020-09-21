@@ -48,6 +48,7 @@
   import { mdiVideoOutline } from '@mdi/js';
   import { mdiVolumeMinus } from '@mdi/js';
   import { mdiVolumePlus } from '@mdi/js';
+  import createAudioMixer from "@/js/volume-meter.js"
   
   export default {
     name: 'Channel',
@@ -211,6 +212,8 @@
       this.resizeEventHandler("mounted");
       this.audioSrc.connect(this.gainNode);
       this.gainNode.connect(this.audioCtx.destination);
+
+      //audioNode = createAudioMeter(audioContext,clipLevel,averaging,clipLag);
     }
   }
     

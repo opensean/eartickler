@@ -87,3 +87,5 @@ function volumeAudioProcess( event ) {
     // want "fast attack, slow release."
     this.volume = Math.max(rms, this.volume*this.averaging);
 }
+
+export { createAudioMeter };
