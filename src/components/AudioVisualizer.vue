@@ -35,7 +35,6 @@
 
             var audioCtx = sketch.getAudioContext();
             var source = audioCtx.createMediaStreamSource(userMedia);
-            console.log(source);
             fft = new p5.FFT();
             fft.setInput(source);
             //sketch.resizeCanvas(maxWidth, maxHeight);
@@ -67,13 +66,7 @@
     },
 
     mounted() {
-       if(this.userMedia.getAudioTracks()[0].enabled){ 
-         this.createNewSketch(this.userMedia, this.maxWidth, this.maxHeight);
-       }
-       //var spectrum = require('@/js/frequency-spectrum.js');
-       //spectrum.main.userMedia = this.userMedia;
-       //console.log(spectrum.main);
-       //new p5(spectrum.main);
+       this.createNewSketch(this.userMedia, this.maxWidth, this.maxHeight);
 
     }
   }

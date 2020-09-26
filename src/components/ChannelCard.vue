@@ -30,30 +30,32 @@
         </template>
       </v-slider>
     </v-col>
+    <v-col cols = "1" :ref="userMedia.id + '-volumeMeterCol'" >
+      <volume-meter  :maxWidth="10" :maxHeight="audioHeight" :audioCtx="audioCtx" :userMedia="gainNodeOut" :key="audioComp" />
+    </v-col>
+    <v-col cols = "6" :ref="userMedia.id + '-audoVisCol'" >
+      <audio-visualizer  :maxWidth="audioWidth" :maxHeight="audioHeight" :userMedia="gainNodeOut"  :key="audioComp" />
+    </v-col>
     <v-col cols = "3" :ref="userMedia.id + '-videoCol'">
         <video :width="videoWidth" :ref="userMedia.id" :id="userMedia.id" autoplay muted ></video>
     </v-col>
-
-    <v-col cols = "7" :ref="userMedia.id + '-audoVisCol'" >
-      <audio-visualizer  :maxWidth="audioWidth" :maxHeight="audioHeight" :userMedia="userMedia" :key="audioComp" />
-    </v-col>
-
   </v-row>
   </v-card>
 </template>
 
 <script>
   import AudioVisualizer from "@/components/AudioVisualizer.vue";
+  import VolumeMeter from "@/components/VolumeMeter.vue";
   import { mdiMicrophoneOutline } from '@mdi/js';
   import { mdiVideoOutline } from '@mdi/js';
   import { mdiVolumeMinus } from '@mdi/js';
   import { mdiVolumePlus } from '@mdi/js';
-  import createAudioMixer from "@/js/volume-meter.js"
   
   export default {
     name: 'Channel',
     components: {
       AudioVisualizer,
+      VolumeMeter,
     },
 
     props: {
@@ -78,9 +80,9 @@
         return this.volume.toString();
       },
 
-      audioCtx: function (){
-        return new (window.AudioContext || window.webkitAudioContext)();
-      },
+      //audioCtx: function (){
+      //  return new (window.AudioContext || window.webkitAudioContext)();
+      //},
       
       audioSrc: function (){
          return this.audioCtx.createMediaStreamSource(this.userMedia);
@@ -105,10 +107,12 @@
        audioWidth: 100,
        audioHeight: 200,
        audioComp: 0,
+       audioCtx: new (window.AudioContext || window.webkitAudioContext)(),
        volume: 20,
        videoWidth: 100,
        enableAudioIcon: mdiMicrophoneOutline,
        enableVideoIcon: mdiVideoOutline,
+       gainNodeOut: null,
        switchAudio: false,
        switchVideo: false,
        volumeUp: mdiVolumePlus,
@@ -211,9 +215,15 @@
       this.renderVideo(this.userMedia);
       this.resizeEventHandler("mounted");
       this.audioSrc.connect(this.gainNode);
-      this.gainNode.connect(this.audioCtx.destination);
+      console.log(this.audioCtx);
+      var splitter = this.audioCtx.createChannelSplitter(2);
+      this.gainNode.connect(splitter);
 
-      //audioNode = createAudioMeter(audioContext,clipLevel,averaging,clipLag);
+      splitter.connect(this.audioCtx.destination, 0);
+
+      let dest = this.audioCtx.createMediaStreamDestination();
+      splitter.connect(dest, 0);
+      this.gainNodeOut = dest.stream;
     }
   }
     
